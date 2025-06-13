@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -34,7 +33,6 @@ class _ClassifierHomePageState extends State<ClassifierHomePage> {
   File? _image;
   List<dynamic> _results = [];
   bool _loading = false;
-  ui.Image? _loadedImage;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -42,15 +40,11 @@ class _ClassifierHomePageState extends State<ClassifierHomePage> {
     final pickedFile = await _picker.pickImage(source: source);
 
     if (pickedFile != null) {
-      final imageFile = File(pickedFile.path);
-      final rawImage = await decodeImageFromList(await imageFile.readAsBytes());
-
       setState(() {
-        _image = imageFile;
-        _loadedImage = rawImage;
+        _image = File(pickedFile.path);
         _results = [];
       });
-      await _classifyImage(imageFile);
+      await _classifyImage(_image!);
     }
   }
 
@@ -87,23 +81,16 @@ class _ClassifierHomePageState extends State<ClassifierHomePage> {
     });
   }
 
-  Widget _buildImageWithBoxes() {
-    if (_image == null || _loadedImage == null) {
-      return const Text('No image selected');
-    }
-
-    return FittedBox(
-      child: SizedBox(
-        width: _loadedImage!.width.toDouble(),
-        height: _loadedImage!.height.toDouble(),
-        child: CustomPaint(
-          foregroundPainter: BoundingBoxPainter(
-            image: _loadedImage!,
-            results: _results,
-          ),
-          child: Image.file(_image!),
-        ),
-      ),
+  Widget _buildResultList() {
+    if (_results.isEmpty) return const Text('No results');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _results.map((result) {
+        return Text(
+          '${result['label']}: ${(result['confidence'] * 100).toStringAsFixed(1)}%',
+          style: const TextStyle(fontSize: 18),
+        );
+      }).toList(),
     );
   }
 
@@ -117,14 +104,15 @@ class _ClassifierHomePageState extends State<ClassifierHomePage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Expanded(
-              child: Center(
-                child: _loading
-                    ? const CircularProgressIndicator()
-                    : _buildImageWithBoxes(),
-              ),
-            ),
-            const SizedBox(height: 8),
+            if (_image != null)
+              Image.file(_image!, height: 200)
+            else
+              const Text('No image selected'),
+            const SizedBox(height: 16),
+            _loading
+                ? const CircularProgressIndicator()
+                : _buildResultList(),
+            const Spacer(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -146,51 +134,3 @@ class _ClassifierHomePageState extends State<ClassifierHomePage> {
     );
   }
 }
-
-class BoundingBoxPainter extends CustomPainter {
-  final ui.Image image;
-  final List<dynamic> results;
-
-  BoundingBoxPainter({required this.image, required this.results});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.greenAccent
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-
-    final textStyle = TextStyle(
-      color: Colors.greenAccent,
-      fontSize: 16,
-      backgroundColor: Colors.black54,
-    );
-
-    for (var result in results) {
-      if (result.containsKey('box')) {
-        final box = result['box'];
-        final left = box['x'];
-        final top = box['y'];
-        final width = box['width'];
-        final height = box['height'];
-
-        final rect = Rect.fromLTWH(left, top, width, height);
-        canvas.drawRect(rect, paint);
-
-        final label = result['label'];
-        final confidence = (result['confidence'] * 100).toStringAsFixed(1);
-        final span = TextSpan(text: '$label ($confidence%)', style: textStyle);
-        final tp = TextPainter(
-          text: span,
-          textDirection: TextDirection.ltr,
-        );
-        tp.layout();
-        tp.paint(canvas, Offset(left, top - tp.height));
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-

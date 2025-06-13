@@ -17,3 +17,4 @@ samples, guidance on mobile development, and a full API reference.
 
 App is defined in `lib/main.dart`
 Do `fluter run` to run and test
+`flutter clean` to fix some cache errors
