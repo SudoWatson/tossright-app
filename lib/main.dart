@@ -5,112 +5,91 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:camera/camera.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final cameras = await availableCameras();
-  final firstCamera = cameras.first;
-
-  runApp(WasteClassifierApp(camera: firstCamera));
+void main() {
+  runApp(const WasteClassifierApp());
 }
 
 class WasteClassifierApp extends StatelessWidget {
-  final CameraDescription camera;
-
-  const WasteClassifierApp({super.key, required this.camera});
+  const WasteClassifierApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Waste Classifier',
       theme: ThemeData.dark(),
-      home: ClassifierHomePage(camera: camera),
+      home: const ClassifierHomePage(),
     );
   }
 }
 
 class ClassifierHomePage extends StatefulWidget {
-  final CameraDescription camera;
-
-  const ClassifierHomePage({super.key, required this.camera});
+  const ClassifierHomePage({super.key});
 
   @override
   State<ClassifierHomePage> createState() => _ClassifierHomePageState();
 }
 
 class _ClassifierHomePageState extends State<ClassifierHomePage> {
-  late CameraController _controller;
-  late Future<void> _initializeControllerFuture;
+  File? _image;
   List<dynamic> _results = [];
   bool _loading = false;
   ui.Image? _loadedImage;
-  File? _imageFile;
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = CameraController(widget.camera, ResolutionPreset.medium);
-    _initializeControllerFuture = _controller.initialize();
-  }
+  final ImagePicker _picker = ImagePicker();
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  Future<void> _getImage(ImageSource source) async {
+    final pickedFile = await _picker.pickImage(source: source);
 
-  Future<void> _takePictureAndClassify() async {
-    try {
-      await _initializeControllerFuture;
-
-      final image = await _controller.takePicture();
-      final imageFile = File(image.path);
+    if (pickedFile != null) {
+      final imageFile = File(pickedFile.path);
       final rawImage = await decodeImageFromList(await imageFile.readAsBytes());
 
       setState(() {
-        _imageFile = imageFile;
+        _image = imageFile;
         _loadedImage = rawImage;
         _results = [];
-        _loading = true;
       });
-
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('http://192.168.0.12:8000/classify'),
-      );
-      request.files.add(
-        await http.MultipartFile.fromPath('file', imageFile.path),
-      );
-
-      final response = await request.send();
-
-      if (response.statusCode == 200) {
-        final respStr = await response.stream.bytesToString();
-        final json = jsonDecode(respStr);
-
-        setState(() {
-          _results = json['predictions'];
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to classify image')),
-        );
-      }
-
-      setState(() {
-        _loading = false;
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      await _classifyImage(imageFile);
     }
   }
 
+  Future<void> _classifyImage(File image) async {
+    setState(() {
+      _loading = true;
+    });
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('http://localhost:8000/classify'),
+    );
+    request.files.add(
+      await http.MultipartFile.fromPath('file', image.path),
+    );
+
+    final response = await request.send();
+
+    if (response.statusCode == 200) {
+      final respStr = await response.stream.bytesToString();
+      final json = jsonDecode(respStr);
+
+      setState(() {
+        _results = json['predictions'];
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to classify image')),
+      );
+    }
+
+    setState(() {
+      _loading = false;
+    });
+  }
+
   Widget _buildImageWithBoxes() {
-    if (_imageFile == null || _loadedImage == null) {
-      return const Text('No image captured');
+    if (_image == null || _loadedImage == null) {
+      return const Text('No image selected');
     }
 
     return FittedBox(
@@ -122,7 +101,7 @@ class _ClassifierHomePageState extends State<ClassifierHomePage> {
             image: _loadedImage!,
             results: _results,
           ),
-          child: Image.file(_imageFile!),
+          child: Image.file(_image!),
         ),
       ),
     );
@@ -131,40 +110,38 @@ class _ClassifierHomePageState extends State<ClassifierHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder<void>(
-        future: _initializeControllerFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return Stack(
+      appBar: AppBar(
+        title: const Text('Waste Classifier'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: _loading
+                    ? const CircularProgressIndicator()
+                    : _buildImageWithBoxes(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                CameraPreview(_controller),
-                if (_loading)
-                  const Center(child: CircularProgressIndicator()),
-                if (!_loading && _results.isNotEmpty)
-                  Align(
-                    alignment: Alignment.topCenter,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      color: Colors.black54,
-                      child: _buildImageWithBoxes(),
-                    ),
-                  ),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: FloatingActionButton(
-                      onPressed: _takePictureAndClassify,
-                      child: const Icon(Icons.camera),
-                    ),
-                  ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.photo_camera),
+                  label: const Text('Camera'),
+                  onPressed: () => _getImage(ImageSource.camera),
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.photo_library),
+                  label: const Text('Gallery'),
+                  onPressed: () => _getImage(ImageSource.gallery),
                 ),
               ],
-            );
-          } else {
-            return const Center(child: CircularProgressIndicator());
-          }
-        },
+            ),
+          ],
+        ),
       ),
     );
   }
