@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -61,6 +62,9 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
   bool showPreview = true;
   bool isLoading = false;
 
+  ui.Image? _loadedImage;
+  File? _imageFile;
+
   @override
   void initState() {
     super.initState();
@@ -90,7 +94,6 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
   void didPopNext() {
     // _camController.resumePreview();
     setState(() {
-      isLoading = false;
       showPreview = true;
     });
   }
@@ -105,7 +108,8 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
   }
 
   Future<void> sendImage(String imagePath) async {
-    final rawImage = await decodeImageFromList(await File(imagePath).readAsBytes());
+    final imageFile = File(imagePath);
+    final rawImage = await decodeImageFromList(await imageFile.readAsBytes());
 
     final request = http.MultipartRequest(
       'POST',
@@ -121,6 +125,8 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
       final respStr = await response.stream.bytesToString();
       final json = jsonDecode(respStr);
       setState(() {
+        _imageFile = imageFile;
+        _loadedImage = rawImage;
         _results = json['predictions'];
       });
     } else {
@@ -129,6 +135,26 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
       );
     }
   }
+
+  Widget _buildImageWithBoxes() {
+      if (_imageFile == null || _loadedImage == null) {
+        return const Text('No image captured');
+      }
+
+      return FittedBox(
+        child: SizedBox(
+          width: _loadedImage!.width.toDouble(),
+          height: _loadedImage!.height.toDouble(),
+          child: CustomPaint(
+            foregroundPainter: BoundingBoxPainter(
+              image: _loadedImage!,
+              results: _results,
+            ),
+            child: Image.file(_imageFile!),
+          ),
+        ),
+      );
+    }
 
 
   @override
@@ -179,8 +205,8 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
             await Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => DisplayPictureScreen(
-                  imagePath: image.path,
-                  text: _results[0]['label']
+                  text: _results[0]['label'],
+                  widget: _buildImageWithBoxes(),
                 ),
               ),
             );
@@ -194,6 +220,10 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
               ),
             );
             print(e);
+          } finally {
+            setState(() {
+              isLoading = false;
+            });
           }
         },
         tooltip: 'Increment',
@@ -205,10 +235,10 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
 
 // A widget that displays the picture taken by the user.
 class DisplayPictureScreen extends StatelessWidget {
-  final String imagePath;
   final String text;
+  final Widget widget;
 
-  const DisplayPictureScreen({super.key, required this.imagePath, required this.text});
+  const DisplayPictureScreen({super.key, required this.text, required this.widget, });
 
   @override
   Widget build(BuildContext context) {
@@ -219,7 +249,7 @@ class DisplayPictureScreen extends StatelessWidget {
       body: Column(
         children: <Widget>[
           Text(text),
-          Image.file(File(imagePath)),
+          widget,
         ]
       )
     );
@@ -238,4 +268,51 @@ class ErrorScreen extends StatelessWidget {
       body: Text(text),
     );
   }
+}
+
+class BoundingBoxPainter extends CustomPainter {
+  final ui.Image image;
+  final List<dynamic> results;
+
+  BoundingBoxPainter({required this.image, required this.results});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.greenAccent
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+
+    final textStyle = TextStyle(
+      color: Colors.greenAccent,
+      fontSize: 16,
+      backgroundColor: Colors.black54,
+    );
+
+    for (var result in results) {
+      if (result.containsKey('box')) {
+        final box = result['box'];
+        final left = box['x'];
+        final top = box['y'];
+        final width = box['width'];
+        final height = box['height'];
+
+        final rect = Rect.fromLTWH(left, top, width, height);
+        canvas.drawRect(rect, paint);
+
+        final label = result['label'];
+        final confidence = (result['confidence'] * 100).toStringAsFixed(1);
+        final span = TextSpan(text: '$label ($confidence%)', style: textStyle);
+        final tp = TextPainter(
+          text: span,
+          textDirection: TextDirection.ltr,
+        );
+        tp.layout();
+        tp.paint(canvas, Offset(left, top - tp.height));
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
