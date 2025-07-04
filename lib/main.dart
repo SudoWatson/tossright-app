@@ -1,196 +1,179 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter/widgets.dart';
+import 'package:camera/camera.dart';
 
-void main() {
-  runApp(const WasteClassifierApp());
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+
+void main() async {
+
+  // Setup camera
+  WidgetsFlutterBinding.ensureInitialized();
+  final cameras = await availableCameras();
+  final firstCamera = cameras.first;
+
+  runApp(MyApp(camera: firstCamera));
 }
 
-class WasteClassifierApp extends StatelessWidget {
-  const WasteClassifierApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key, required this.camera});
 
+  final CameraDescription camera;
+
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Waste Classifier',
-      theme: ThemeData.dark(),
-      home: const ClassifierHomePage(),
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      ),
+      home: MyHomePage(title: 'Flutter Demo Home Page', camera: camera),
+      navigatorObservers: [routeObserver]
     );
   }
 }
 
-class ClassifierHomePage extends StatefulWidget {
-  const ClassifierHomePage({super.key});
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title, required this.camera});
+
+
+  final String title;
+  final CameraDescription camera;
 
   @override
-  State<ClassifierHomePage> createState() => _ClassifierHomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _ClassifierHomePageState extends State<ClassifierHomePage> {
-  File? _image;
-  List<dynamic> _results = [];
-  bool _loading = false;
-  ui.Image? _loadedImage;
+class _MyHomePageState extends State<MyHomePage> with RouteAware {
+  late CameraController _camController;
+  late Future<void> _initializeControllerFuture;
 
-  final ImagePicker _picker = ImagePicker();
+  int _counter = 0;
+  bool showPreview = true;
 
-  Future<void> _getImage(ImageSource source) async {
-    final pickedFile = await _picker.pickImage(source: source);
+  @override
+  void initState() {
+    super.initState();
 
-    if (pickedFile != null) {
-      final imageFile = File(pickedFile.path);
-      final rawImage = await decodeImageFromList(await imageFile.readAsBytes());
+    _camController = CameraController(
+      widget.camera,
+      ResolutionPreset.medium,
+    );
 
-      setState(() {
-        _image = imageFile;
-        _loadedImage = rawImage;
-        _results = [];
-      });
-      await _classifyImage(imageFile);
-    }
+    _initializeControllerFuture = _camController.initialize();
   }
 
-  Future<void> _classifyImage(File image) async {
-    setState(() {
-      _loading = true;
-    });
-
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('http://localhost:8000/classify'),
-    );
-    request.files.add(
-      await http.MultipartFile.fromPath('file', image.path),
-    );
-
-    final response = await request.send();
-
-    if (response.statusCode == 200) {
-      final respStr = await response.stream.bytesToString();
-      final json = jsonDecode(respStr);
-
-      setState(() {
-        _results = json['predictions'];
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to classify image')),
-      );
-    }
-
-    setState(() {
-      _loading = false;
-    });
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    _camController.dispose();
+    super.dispose();
   }
 
-  Widget _buildImageWithBoxes() {
-    if (_image == null || _loadedImage == null) {
-      return const Text('No image selected');
-    }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
 
-    return FittedBox(
-      child: SizedBox(
-        width: _loadedImage!.width.toDouble(),
-        height: _loadedImage!.height.toDouble(),
-        child: CustomPaint(
-          foregroundPainter: BoundingBoxPainter(
-            image: _loadedImage!,
-            results: _results,
-          ),
-          child: Image.file(_image!),
-        ),
-      ),
-    );
+  @override
+  void didPopNext() {
+    // _camController.resumePreview();
+    showPreview = true;
+
+  }
+
+  @override
+  void didPushNext() {
+    // Called when pushed to a different screen
+    // _camController.pausePreview();
+    showPreview = false;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Waste Classifier'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(widget.title),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Center(
         child: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: _loading
-                    ? const CircularProgressIndicator()
-                    : _buildImageWithBoxes(),
-              ),
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const Text('You have pushed the button this many times:'),
+            Text(
+              '$_counter',
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.photo_camera),
-                  label: const Text('Camera'),
-                  onPressed: () => _getImage(ImageSource.camera),
-                ),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.photo_library),
-                  label: const Text('Gallery'),
-                  onPressed: () => _getImage(ImageSource.gallery),
-                ),
-              ],
-            ),
+            FutureBuilder<void>(
+              future: _initializeControllerFuture,
+              builder: (context, snapshot) {
+                if (showPreview && snapshot.connectionState == ConnectionState.done) {
+                  // If the Future is complete, display the preview.
+                  return CameraPreview(_camController);
+                } else {
+                  // Otherwise, display a loading indicator.
+                  return const Center(child: CircularProgressIndicator());
+                }
+              },
+            )
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          // Take the Picture in a try / catch block. If anything goes wrong,
+          // catch the error.
+          try {
+            // Ensure that the camera is initialized.
+            await _initializeControllerFuture;
+
+            // Attempt to take a picture and get the file `image`
+            // where it was saved.
+            final image = await _camController.takePicture();
+
+            if (!context.mounted) return;
+
+
+            // If the picture was taken, display it on a new screen.
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => DisplayPictureScreen(
+                  // Pass the automatically generated path to
+                  // the DisplayPictureScreen widget.
+                  imagePath: image.path,
+                ),
+              ),
+            );
+          } catch (e) {
+            // If an error occurs, log the error to the console.
+            print(e);
+          }
+        },
+        tooltip: 'Increment',
+        child: const Icon(Icons.add),
+      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
 
-class BoundingBoxPainter extends CustomPainter {
-  final ui.Image image;
-  final List<dynamic> results;
+// A widget that displays the picture taken by the user.
+class DisplayPictureScreen extends StatelessWidget {
+  final String imagePath;
 
-  BoundingBoxPainter({required this.image, required this.results});
+  const DisplayPictureScreen({super.key, required this.imagePath});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.greenAccent
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-
-    final textStyle = TextStyle(
-      color: Colors.greenAccent,
-      fontSize: 16,
-      backgroundColor: Colors.black54,
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Display the Picture')),
+      // The image is stored as a file on the device. Use the `Image.file`
+      // constructor with the given path to display the image.
+      body: Image.file(File(imagePath)),
     );
-
-    for (var result in results) {
-      if (result.containsKey('box')) {
-        final box = result['box'];
-        final left = box['x'];
-        final top = box['y'];
-        final width = box['width'];
-        final height = box['height'];
-
-        final rect = Rect.fromLTWH(left, top, width, height);
-        canvas.drawRect(rect, paint);
-
-        final label = result['label'];
-        final confidence = (result['confidence'] * 100).toStringAsFixed(1);
-        final span = TextSpan(text: '$label ($confidence%)', style: textStyle);
-        final tp = TextPainter(
-          text: span,
-          textDirection: TextDirection.ltr,
-        );
-        tp.layout();
-        tp.paint(canvas, Offset(left, top - tp.height));
-      }
-    }
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
-
