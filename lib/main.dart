@@ -59,6 +59,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
 
   int _counter = 0;
   bool showPreview = true;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -88,15 +89,19 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
   @override
   void didPopNext() {
     // _camController.resumePreview();
-    showPreview = true;
-
+    setState(() {
+      isLoading = false;
+      showPreview = true;
+    });
   }
 
   @override
   void didPushNext() {
     // Called when pushed to a different screen
     // _camController.pausePreview();
-    showPreview = false;
+    setState(() {
+      showPreview = false;
+    });
   }
 
   Future<void> sendImage(String imagePath) async {
@@ -145,7 +150,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
             FutureBuilder<void>(
               future: _initializeControllerFuture,
               builder: (context, snapshot) {
-                if (showPreview && snapshot.connectionState == ConnectionState.done) {
+                if (!isLoading && showPreview && snapshot.connectionState == ConnectionState.done) {
                   // If the Future is complete, display the preview.
                   return CameraPreview(_camController);
                 } else {
@@ -163,6 +168,9 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
             await _initializeControllerFuture;
 
             final image = await _camController.takePicture();
+            setState(() {
+              isLoading = true;
+            });
 
             if (!context.mounted) return;
 
