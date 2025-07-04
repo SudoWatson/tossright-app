@@ -1,9 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/widgets.dart';
 import 'package:camera/camera.dart';
+
+final String API_ROOT = "http://192.168.0.59:8000";
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
@@ -51,6 +55,8 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
   late CameraController _camController;
   late Future<void> _initializeControllerFuture;
 
+  List<dynamic> _results = [];
+
   int _counter = 0;
   bool showPreview = true;
 
@@ -93,6 +99,33 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
     showPreview = false;
   }
 
+  Future<void> sendImage(String imagePath) async {
+    final rawImage = await decodeImageFromList(await File(imagePath).readAsBytes());
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse(API_ROOT + '/classify'),
+    );
+    request.files.add(
+      await http.MultipartFile.fromPath('file', imagePath),
+    );
+
+    final response = await request.send();
+
+    if (response.statusCode == 200) {
+      final respStr = await response.stream.bytesToString();
+      final json = jsonDecode(respStr);
+      setState(() {
+        _results = json['predictions'];
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to classify image')),
+      );
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,31 +159,32 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          // Take the Picture in a try / catch block. If anything goes wrong,
-          // catch the error.
           try {
-            // Ensure that the camera is initialized.
             await _initializeControllerFuture;
 
-            // Attempt to take a picture and get the file `image`
-            // where it was saved.
             final image = await _camController.takePicture();
 
             if (!context.mounted) return;
 
+            await sendImage(image.path);  // Send image to get classified and update results
 
-            // If the picture was taken, display it on a new screen.
             await Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => DisplayPictureScreen(
-                  // Pass the automatically generated path to
-                  // the DisplayPictureScreen widget.
                   imagePath: image.path,
+                  text: _results[0]['label']
                 ),
               ),
             );
           } catch (e) {
-            // If an error occurs, log the error to the console.
+
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => ErrorScreen(
+                  text: e.toString()
+                ),
+              ),
+            );
             print(e);
           }
         },
@@ -164,8 +198,9 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
 // A widget that displays the picture taken by the user.
 class DisplayPictureScreen extends StatelessWidget {
   final String imagePath;
+  final String text;
 
-  const DisplayPictureScreen({super.key, required this.imagePath});
+  const DisplayPictureScreen({super.key, required this.imagePath, required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +208,26 @@ class DisplayPictureScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Display the Picture')),
       // The image is stored as a file on the device. Use the `Image.file`
       // constructor with the given path to display the image.
-      body: Image.file(File(imagePath)),
+      body: Column(
+        children: <Widget>[
+          Text(text),
+          Image.file(File(imagePath)),
+        ]
+      )
+    );
+  }
+}
+
+class ErrorScreen extends StatelessWidget {
+  final String text;
+
+  const ErrorScreen({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Display the Picture')),
+      body: Text(text),
     );
   }
 }
