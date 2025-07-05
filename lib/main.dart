@@ -56,7 +56,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
   late CameraController _camController;
   late Future<void> _initializeControllerFuture;
 
-  String _id;
+  String _id = "";
   List<dynamic> _results = [];
 
   int _counter = 0;
@@ -202,6 +202,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
               MaterialPageRoute(
                 builder: (context) => DisplayPictureScreen(
                   widget: _buildImageWithBoxes(),
+                  id: _id,
                 ),
               ),
             );
@@ -230,8 +231,21 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
 // A widget that displays the picture taken by the user.
 class DisplayPictureScreen extends StatelessWidget {
   final Widget widget;
+  final String id;
 
-  const DisplayPictureScreen({super.key, required this.widget, });
+  const DisplayPictureScreen({super.key, required this.widget, required this.id });
+
+  void sendRequest (bool accurate) {
+    final url = Uri.parse(API_ROOT + '/feedback');
+    http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'id': id,
+        'accurate': accurate,
+      }),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -242,10 +256,24 @@ class DisplayPictureScreen extends StatelessWidget {
       body: Column(
         children: <Widget>[
           widget,
-        ]
+          Text("How do the results look?"),
+          Row(
+            children: <Widget>[
+              TextButton(
+                child: Text("Accurate"),
+                onPressed: () { sendRequest(true);}
+              ),
+              TextButton(
+                child: Text("Something isn't quite right"),
+                onPressed: () { sendRequest(false); }
+              )
+            ]
+          )
+        ],
       )
     );
   }
+
 }
 
 class ErrorScreen extends StatelessWidget {
