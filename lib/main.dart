@@ -56,6 +56,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
   late CameraController _camController;
   late Future<void> _initializeControllerFuture;
 
+  String _id;
   List<dynamic> _results = [];
 
   int _counter = 0;
@@ -127,6 +128,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
       setState(() {
         _imageFile = imageFile;
         _loadedImage = rawImage;
+        _id = json['id'];
         _results = json['predictions'];
       });
     } else {
