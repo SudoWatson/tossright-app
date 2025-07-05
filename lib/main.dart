@@ -156,7 +156,6 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
       );
     }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -168,11 +167,6 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
             FutureBuilder<void>(
               future: _initializeControllerFuture,
               builder: (context, snapshot) {
@@ -205,13 +199,11 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
             await Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => DisplayPictureScreen(
-                  text: _results[0]['label'],
                   widget: _buildImageWithBoxes(),
                 ),
               ),
             );
           } catch (e) {
-
             await Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => ErrorScreen(
@@ -226,29 +218,27 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
             });
           }
         },
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        tooltip: 'Detect',
+        child: const Icon(Icons.camera),
+      ),
     );
   }
 }
 
 // A widget that displays the picture taken by the user.
 class DisplayPictureScreen extends StatelessWidget {
-  final String text;
   final Widget widget;
 
-  const DisplayPictureScreen({super.key, required this.text, required this.widget, });
+  const DisplayPictureScreen({super.key, required this.widget, });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Display the Picture')),
+      appBar: AppBar(title: const Text('Detection Results')),
       // The image is stored as a file on the device. Use the `Image.file`
       // constructor with the given path to display the image.
       body: Column(
         children: <Widget>[
-          Text(text),
           widget,
         ]
       )
@@ -264,7 +254,7 @@ class ErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Display the Picture')),
+      appBar: AppBar(title: const Text('Error')),
       body: Text(text),
     );
   }
