@@ -8,7 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/widgets.dart';
 import 'package:camera/camera.dart';
 
-final String API_ROOT = "http://192.168.0.59:8000";
+final String API_ROOT = "http://192.168.0.59:8000";  // PC
+// final String API_ROOT = "http://192.168.0.107:10000";  // Mercury
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
@@ -201,7 +202,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
             await Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => DisplayPictureScreen(
-                  widget: _buildImageWithBoxes(),
+                  widget: Image.file(File(image.path)),//_buildImageWithBoxes(),
                   id: _id,
                 ),
               ),
