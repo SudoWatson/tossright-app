@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/widgets.dart';
 import 'package:camera/camera.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 final String API_ROOT = "http://192.168.0.59:8000";  // PC
 // final String API_ROOT = "http://192.168.0.107:10000";  // Mercury
@@ -34,7 +35,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Waste Identifier',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          brightness: MediaQuery.platformBrightnessOf(context),
+          seedColor: Color(0xFF031601),
+        ),
       ),
       home: MyHomePage(title: 'Waste Identifier', camera: camera),
       navigatorObservers: [routeObserver]
@@ -139,92 +143,112 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
     }
   }
 
-  Widget _buildImageWithBoxes() {
-      if (_imageFile == null || _loadedImage == null) {
-        return const Text('No image captured');
-      }
+  Future<void> _takePicture() async {
+    try {
+      await _initializeControllerFuture;
 
-      return FittedBox(
-        child: SizedBox(
-          width: _loadedImage!.width.toDouble(),
-          height: _loadedImage!.height.toDouble(),
-          child: CustomPaint(
-            foregroundPainter: BoundingBoxPainter(
-              image: _loadedImage!,
-              results: _results,
-            ),
-            child: Image.file(_imageFile!),
+      final image = await _camController.takePicture();
+      setState(() {
+        isLoading = true;
+      });
+
+      if (!context.mounted) return;
+
+      await sendImage(image.path);  // Send image to get classified and update results
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => DisplayPictureScreen(
+            results: _results,
+            imagePath: image.path,
+            id: _id,
           ),
         ),
       );
+    } catch (e) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ErrorScreen(
+            text: e.toString()
+          ),
+        ),
+      );
+      print(e);
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final previewWidth = size.width * 0.9;
+    final previewHeight = previewWidth * 512 / 384;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            FutureBuilder<void>(
-              future: _initializeControllerFuture,
-              builder: (context, snapshot) {
-                if (!isLoading && showPreview && snapshot.connectionState == ConnectionState.done) {
-                  // If the Future is complete, display the preview.
-                  return CameraPreview(_camController);
-                } else {
-                  // Otherwise, display a loading indicator.
-                  return const Center(child: CircularProgressIndicator());
-                }
-              },
-            )
-          ],
+        child: FutureBuilder<void>(
+          future: _initializeControllerFuture,
+          builder: (context, snapshot) {
+            if (!isLoading && showPreview && snapshot.connectionState == ConnectionState.done) {
+              // If the Future is complete, display the preview.
+              return Column(
+                children: <Widget>[
+                  // Preview
+                  Padding(
+                    padding: EdgeInsets.only(top: 50),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: SizedBox(
+                        width: previewWidth,
+                        height: previewHeight,
+                        child:CameraPreview(_camController),
+                      ),
+                    ),
+                  ),
+                  // Shutter button
+                  Padding(
+                    padding: EdgeInsets.only(top: 50),
+                    child: GestureDetector(
+                      onTap: _takePicture,
+                      child: Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black45,
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            )
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.camera,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                ],
+              );
+            } else {
+              // Otherwise, display a loading indicator.
+              return const Center(child: CircularProgressIndicator());
+            }
+          },
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          try {
-            await _initializeControllerFuture;
-
-            final image = await _camController.takePicture();
-            setState(() {
-              isLoading = true;
-            });
-
-            if (!context.mounted) return;
-
-            await sendImage(image.path);  // Send image to get classified and update results
-
-            await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => DisplayPictureScreen(
-                  widget: Image.file(File(image.path)),//_buildImageWithBoxes(),
-                  results: _results,
-                  id: _id,
-                ),
-              ),
-            );
-          } catch (e) {
-            await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => ErrorScreen(
-                  text: e.toString()
-                ),
-              ),
-            );
-            print(e);
-          } finally {
-            setState(() {
-              isLoading = false;
-            });
-          }
-        },
-        tooltip: 'Detect',
-        child: const Icon(Icons.camera),
       ),
     );
   }
@@ -232,11 +256,11 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
 
 // A widget that displays the picture taken by the user.
 class DisplayPictureScreen extends StatelessWidget {
-  final Widget widget;
   final List<dynamic> results;
+  final String imagePath;
   final String id;
 
-  const DisplayPictureScreen({super.key, required this.widget, required this.results, required this.id });
+  const DisplayPictureScreen({super.key, required this.results, required this.imagePath, required this.id });
 
   void sendRequest (bool accurate) {
     final url = Uri.parse(API_ROOT + '/feedback');
@@ -248,6 +272,15 @@ class DisplayPictureScreen extends StatelessWidget {
         'accurate': accurate,
       }),
     );
+    Fluttertoast.showToast(
+      msg: "Thanks for your feedback!",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.grey.shade800,
+      textColor: Colors.white,
+      fontSize: 16.0
+    );
   }
 
   @override
@@ -256,26 +289,55 @@ class DisplayPictureScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Detection Results')),
       // The image is stored as a file on the device. Use the `Image.file`
       // constructor with the given path to display the image.
-      body: Column(
+      body: SafeArea( child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
-          widget,
-          Text("Material: " + results[0]['label'] + " - " + (results[0]['confidence'] * 100).toStringAsFixed(2) + "%"),
-          Text("How do the results look?"),
-          Row(
+
+          Column(
             children: <Widget>[
-              TextButton(
-                child: Text("Accurate"),
-                onPressed: () { sendRequest(true);}
+              Image(
+                image: FileImage(File(imagePath)),
+                width: 224,
               ),
-              TextButton(
-                child: Text("Something isn't quite right"),
-                onPressed: () { sendRequest(false); }
-              )
-            ]
+              Text(
+                results[0]['label'][0].toUpperCase() + results[0]['label'].substring(1),  // Capitalize first letter
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 40,
+                ),
+              ),
+
+              Padding(
+                padding: EdgeInsets.only(left: 20, right: 20),
+                child: Text(results[0]['description']),
+              ),
+            ]),
+
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+
+              Padding(
+                padding: EdgeInsets.only(left: 20),
+                child: Text("Are the results accurate?"),
+              ),
+              Row(
+                children: <Widget>[
+                  TextButton(
+                    child: Text("Yes"),
+                    onPressed: () { sendRequest(true);}
+                  ),
+                  TextButton(
+                    child: Text("Something isn't quite right"),
+                    onPressed: () { sendRequest(false); }
+                  )
+                ]
+              ),
+            ],
           ),
-          Text("Disposal insturctions: " + results[0]['description']),
         ],
-      )
+      ))
     );
   }
 
@@ -293,51 +355,4 @@ class ErrorScreen extends StatelessWidget {
       body: Text(text),
     );
   }
-}
-
-class BoundingBoxPainter extends CustomPainter {
-  final ui.Image image;
-  final List<dynamic> results;
-
-  BoundingBoxPainter({required this.image, required this.results});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.greenAccent
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-
-    final textStyle = TextStyle(
-      color: Colors.greenAccent,
-      fontSize: 16,
-      backgroundColor: Colors.black54,
-    );
-
-    for (var result in results) {
-      if (result.containsKey('box')) {
-        final box = result['box'];
-        final left = box['x'];
-        final top = box['y'];
-        final width = box['width'];
-        final height = box['height'];
-
-        final rect = Rect.fromLTWH(left, top, width, height);
-        canvas.drawRect(rect, paint);
-
-        final label = result['label'];
-        final confidence = (result['confidence'] * 100).toStringAsFixed(1);
-        final span = TextSpan(text: '$label ($confidence%)', style: textStyle);
-        final tp = TextPainter(
-          text: span,
-          textDirection: TextDirection.ltr,
-        );
-        tp.layout();
-        tp.paint(canvas, Offset(left, top - tp.height));
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
