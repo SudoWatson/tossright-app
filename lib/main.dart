@@ -203,6 +203,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
               MaterialPageRoute(
                 builder: (context) => DisplayPictureScreen(
                   widget: Image.file(File(image.path)),//_buildImageWithBoxes(),
+                  results: _results,
                   id: _id,
                 ),
               ),
@@ -232,9 +233,10 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
 // A widget that displays the picture taken by the user.
 class DisplayPictureScreen extends StatelessWidget {
   final Widget widget;
+  final List<dynamic> results;
   final String id;
 
-  const DisplayPictureScreen({super.key, required this.widget, required this.id });
+  const DisplayPictureScreen({super.key, required this.widget, required this.results, required this.id });
 
   void sendRequest (bool accurate) {
     final url = Uri.parse(API_ROOT + '/feedback');
@@ -257,6 +259,8 @@ class DisplayPictureScreen extends StatelessWidget {
       body: Column(
         children: <Widget>[
           widget,
+          Text("Material: " + results[0]['label']),
+          Text("Confidence: " + (results[0]['confidence'] * 100).toStringAsFixed(2) + "%"),
           Text("How do the results look?"),
           Row(
             children: <Widget>[
