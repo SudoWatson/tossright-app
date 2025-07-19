@@ -32,11 +32,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Waste Identifier',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page', camera: camera),
+      home: MyHomePage(title: 'Waste Identifier', camera: camera),
       navigatorObservers: [routeObserver]
     );
   }
@@ -259,8 +259,7 @@ class DisplayPictureScreen extends StatelessWidget {
       body: Column(
         children: <Widget>[
           widget,
-          Text("Material: " + results[0]['label']),
-          Text("Confidence: " + (results[0]['confidence'] * 100).toStringAsFixed(2) + "%"),
+          Text("Material: " + results[0]['label'] + " - " + (results[0]['confidence'] * 100).toStringAsFixed(2) + "%"),
           Text("How do the results look?"),
           Row(
             children: <Widget>[
@@ -273,7 +272,8 @@ class DisplayPictureScreen extends StatelessWidget {
                 onPressed: () { sendRequest(false); }
               )
             ]
-          )
+          ),
+          Text("Disposal insturctions: " + results[0]['description']),
         ],
       )
     );
