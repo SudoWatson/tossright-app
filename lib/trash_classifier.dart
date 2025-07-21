@@ -1,5 +1,6 @@
-import 'dart:typed_data';
+import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 import 'package:tflite_flutter/tflite_flutter.dart';
 
@@ -10,10 +11,12 @@ class TrashClassifier {
   final int _inputSize = 224;
   final int _numClasses = 6;
 
-  final String modelName = "trashnet-quantized.tflite";
+  final String modelName = "";
 
   Future<void> loadModel() async {
-    _interpreter = await Interpreter.fromAsset('models/$modelName');
+    print("-----------------=======================================Test");
+    print('models/$modelName');
+    _interpreter = await Interpreter.fromAsset('assets/models/trashnet-quantized.tflite');
     _labels = ['cardboard', 'glass', 'metal', 'paper', 'plastic', 'trash'];
     _instructions = {
       'cardboard': "Break down then recycle.",
@@ -25,25 +28,46 @@ class TrashClassifier {
     };
   }
 
-  Future<String> classifyImage(File imageFile) async {
+  Future<Map<String, dynamic>> classifyImage(File imageFile) async {
     // Load and preprocess image
     final img.Image? image = img.decodeImage(await imageFile.readAsBytes());
-    if (image == null) return "Error decoding image";
+    if (image == null) {
+      return {
+        "label": "",
+        "confidence": 0,
+        "instruction": "",
+        "Error": "Could not read image"
+      };
+    }
 
     final img.Image resizedImage = img.copyResize(image, width: _inputSize, height: _inputSize);
-
-    TensorImage tensorImage = TensorImage.fromImage(resizedImage);
-    tensorImage = TensorImage.fromTensorBuffer(TensorBuffer.createFromList(
-      resizedImage.getBytes(format: img.Format.rgb),
-      TfLiteType.uint8,
-    ));
+    Float32List normalizedImage = imageToByteListFloat32(resizedImage);
 
     final output = List.filled(_numClasses, 0.0).reshape([1, _numClasses]);
-    _interpreter.run(tensorImage.buffer, output);
+    _interpreter.run(normalizedImage.buffer, output);
 
     final confidences = output[0] as List<double>;
     int mostConfidentIndex = confidences.indexWhere((c) => c == confidences.reduce((a, b) => a > b ? a : b));
     String label = _labels[mostConfidentIndex];
-    return (label: label, confidence: confidences[mostConfidentIndex], instruction: instructions[label])
+    return {
+      "label": label,
+      "confidence": confidences[mostConfidentIndex],
+      "instruction": _instructions[label]
+    };
+  }
+
+  Float32List imageToByteListFloat32(img.Image image) {
+    var convertedBytes = Float32List(_inputSize * _inputSize * 3);
+    int pixelIndex = 0;
+    for (int y = 0; y < _inputSize; y++) {
+      for (int x = 0; x < _inputSize; x++) {
+        img.Pixel pixel = image.getPixel(x, y);
+        convertedBytes[pixelIndex++] = pixel.r / 255.0;
+        convertedBytes[pixelIndex++] = pixel.g / 255.0;
+        convertedBytes[pixelIndex++] = pixel.b / 255.0;
+      }
+    }
+
+    return convertedBytes;
   }
 }

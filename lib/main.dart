@@ -117,13 +117,15 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
     });
   }
 
-  Future<void> sendImage(String imagePath) async {
+  Future<void> classifyImage(String imagePath) async {
     final imageFile = File(imagePath);
-    setState(() async {
+    final rawImage = await decodeImageFromList(await imageFile.readAsBytes());
+    final result = await _trashClassifier.classifyImage(imageFile);// json['predictions'];
+    setState(() {
       _imageFile = imageFile;
-      _loadedImage = await decodeImageFromList(await imageFile.readAsBytes());
+      _loadedImage = rawImage;
       _id = '3'; // json['id'];
-      _results = _trashClassifier.classifyImage(imageFile);// json['predictions'];
+      _results = result;
     });
   }
 
@@ -138,7 +140,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
 
       if (!context.mounted) return;
 
-      await sendImage(image.path);  // Send image to get classified and update results
+      await classifyImage(image.path);  // Send image to get classified and update results
 
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -284,7 +286,7 @@ class DisplayPictureScreen extends StatelessWidget {
                 width: 224,
               ),
               Text(
-                results.label[0].toUpperCase() + results.label.substring(1),  // Capitalize first letter
+                results["label"][0].toUpperCase() + results["label"].substring(1),  // Capitalize first letter
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 40,
@@ -293,7 +295,7 @@ class DisplayPictureScreen extends StatelessWidget {
 
               Padding(
                 padding: EdgeInsets.only(left: 20, right: 20),
-                child: Text(results.instruction),
+                child: Text(results["instruction"]),
               ),
             ]),
 
