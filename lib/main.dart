@@ -9,8 +9,10 @@ import 'package:flutter/widgets.dart';
 import 'package:camera/camera.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-final String API_ROOT = "http://192.168.0.59:8000";  // PC
-// final String API_ROOT = "http://192.168.0.107:10000";  // Mercury
+import 'trash_classifier.dart';
+
+//final String API_ROOT = "http://192.168.0.59:8000";  // PC
+final String API_ROOT = "http://192.168.0.107:10000";  // Mercury
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
@@ -60,9 +62,10 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> with RouteAware {
   late CameraController _camController;
   late Future<void> _initializeControllerFuture;
+  final TrashClassifier _trashClassifier = TrashClassifier();
 
   String _id = "";
-  List<dynamic> _results = [];
+  dynamic _results = ();
 
   int _counter = 0;
   bool showPreview = true;
@@ -81,6 +84,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
     );
 
     _initializeControllerFuture = _camController.initialize();
+    _trashClassifier.loadModel();
   }
 
   @override
@@ -115,32 +119,12 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
 
   Future<void> sendImage(String imagePath) async {
     final imageFile = File(imagePath);
-    final rawImage = await decodeImageFromList(await imageFile.readAsBytes());
-
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse(API_ROOT + '/classify'),
-    );
-    request.files.add(
-      await http.MultipartFile.fromPath('file', imagePath),
-    );
-
-    final response = await request.send();
-
-    if (response.statusCode == 200) {
-      final respStr = await response.stream.bytesToString();
-      final json = jsonDecode(respStr);
-      setState(() {
-        _imageFile = imageFile;
-        _loadedImage = rawImage;
-        _id = json['id'];
-        _results = json['predictions'];
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to classify image')),
-      );
-    }
+    setState(() async {
+      _imageFile = imageFile;
+      _loadedImage = await decodeImageFromList(await imageFile.readAsBytes());
+      _id = '3'; // json['id'];
+      _results = _trashClassifier.classifyImage(imageFile);// json['predictions'];
+    });
   }
 
   Future<void> _takePicture() async {
@@ -256,7 +240,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
 
 // A widget that displays the picture taken by the user.
 class DisplayPictureScreen extends StatelessWidget {
-  final List<dynamic> results;
+  final dynamic results;
   final String imagePath;
   final String id;
 
@@ -300,7 +284,7 @@ class DisplayPictureScreen extends StatelessWidget {
                 width: 224,
               ),
               Text(
-                results[0]['label'][0].toUpperCase() + results[0]['label'].substring(1),  // Capitalize first letter
+                results.label[0].toUpperCase() + results.label.substring(1),  // Capitalize first letter
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 40,
@@ -309,7 +293,7 @@ class DisplayPictureScreen extends StatelessWidget {
 
               Padding(
                 padding: EdgeInsets.only(left: 20, right: 20),
-                child: Text(results[0]['description']),
+                child: Text(results.instruction),
               ),
             ]),
 
