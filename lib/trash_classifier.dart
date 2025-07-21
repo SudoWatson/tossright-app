@@ -11,12 +11,12 @@ class TrashClassifier {
   final int _inputSize = 224;
   final int _numClasses = 6;
 
-  final String modelName = "";
+  final String modelName = "trashnet-quantized.tflite";
 
   Future<void> loadModel() async {
     print("-----------------=======================================Test");
     print('models/$modelName');
-    _interpreter = await Interpreter.fromAsset('assets/models/trashnet-quantized.tflite');
+    _interpreter = await Interpreter.fromAsset('assets/models/$modelName');
     _labels = ['cardboard', 'glass', 'metal', 'paper', 'plastic', 'trash'];
     _instructions = {
       'cardboard': "Break down then recycle.",

@@ -64,12 +64,13 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
   late Future<void> _initializeControllerFuture;
   final TrashClassifier _trashClassifier = TrashClassifier();
 
-  String _id = "";
   dynamic _results = ();
 
   int _counter = 0;
   bool showPreview = true;
   bool isLoading = false;
+
+  Future<String>? _uploadImageFuture = null;
 
   ui.Image? _loadedImage;
   File? _imageFile;
@@ -117,6 +118,32 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
     });
   }
 
+  Future<String> uploadImage(String imagePath) async {
+    final imageFile = File(imagePath);
+    final rawImage = await decodeImageFromList(await imageFile.readAsBytes());
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse(API_ROOT + '/classify'),
+    );
+    request.files.add(
+      await http.MultipartFile.fromPath('file', imagePath),
+    );
+
+    final response = await request.send();
+
+    if (response.statusCode == 200) {
+      final respStr = await response.stream.bytesToString();
+      final json = jsonDecode(respStr);
+      return json['id'];
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to classify image')),
+      );
+      return "error";
+    }
+  }
+
   Future<void> classifyImage(String imagePath) async {
     final imageFile = File(imagePath);
     final rawImage = await decodeImageFromList(await imageFile.readAsBytes());
@@ -124,9 +151,9 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
     setState(() {
       _imageFile = imageFile;
       _loadedImage = rawImage;
-      _id = '3'; // json['id'];
       _results = result;
     });
+    _uploadImageFuture = uploadImage(imagePath);
   }
 
   Future<void> _takePicture() async {
@@ -147,7 +174,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
           builder: (context) => DisplayPictureScreen(
             results: _results,
             imagePath: image.path,
-            id: _id,
+            futureUpload: _uploadImageFuture
           ),
         ),
       );
@@ -244,12 +271,13 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
 class DisplayPictureScreen extends StatelessWidget {
   final dynamic results;
   final String imagePath;
-  final String id;
+  final Future<String>? futureUpload;
 
-  const DisplayPictureScreen({super.key, required this.results, required this.imagePath, required this.id });
+  const DisplayPictureScreen({super.key, required this.results, required this.imagePath, required this.futureUpload });
 
-  void sendRequest (bool accurate) {
+  void sendRequest (bool accurate) async {
     final url = Uri.parse(API_ROOT + '/feedback');
+    final id = await futureUpload;
     http.post(
       url,
       headers: {'Content-Type': 'application/json'},
