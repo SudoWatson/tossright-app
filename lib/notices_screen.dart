@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'home_screen.dart';
 
 class PrivacyScreen extends StatelessWidget {
+  final WidgetBuilder buildAcceptedScreen;
+
+  const PrivacyScreen({super.key, required this.buildAcceptedScreen});
+
   Future<void> _acceptAndContinue(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('accepted_policy', true);
 
     // Go to home screen
-    /*
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => HomeScreen()),
+      MaterialPageRoute(builder: buildAcceptedScreen),
     );
-    */
   }
 
   @override

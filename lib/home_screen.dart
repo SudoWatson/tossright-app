@@ -11,19 +11,17 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'trash_classifier.dart';
-
+import 'notices_screen.dart';
 
 //final String API_ROOT = "http://192.168.0.59:8000";  // PC
 final String API_ROOT = "http://192.168.0.107:10000";  // Mercury
 
-final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
-
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title, required this.camera});
-
+  const MyHomePage({super.key, required this.title, required this.camera, required this.routeObserver});
 
   final String title;
   final CameraDescription camera;
+  final RouteObserver<ModalRoute<void>> routeObserver;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -49,10 +47,9 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
   void initState() {
     super.initState();
 
-    // Setup camera
-    WidgetsFlutterBinding.ensureInitialized();
-    final cameras = await availableCameras();
-    final firstCamera = cameras.first;
+    /**/
+    SharedPreferences.getInstance().then((prefs) => prefs.setBool('accepted_policy', false));
+    /**/
 
     _camController = CameraController(
       widget.camera,
@@ -65,7 +62,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
 
   @override
   void dispose() {
-    routeObserver.unsubscribe(this);
+    widget.routeObserver.unsubscribe(this);
     _camController.dispose();
     super.dispose();
   }
@@ -73,7 +70,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    routeObserver.subscribe(this, ModalRoute.of(context)!);
+    widget.routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
   @override
