@@ -11,62 +11,12 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'trash_classifier.dart';
-import 'notices_screen.dart';
+
 
 //final String API_ROOT = "http://192.168.0.59:8000";  // PC
 final String API_ROOT = "http://192.168.0.107:10000";  // Mercury
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
-
-void main() async {
-
-  // Setup camera
-  WidgetsFlutterBinding.ensureInitialized();
-  final cameras = await availableCameras();
-  final firstCamera = cameras.first;
-
-  runApp(MyApp(camera: firstCamera));
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.camera});
-
-
-
-  final CameraDescription camera;
-
-  Future<bool> hasAcceptedPolicy() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('accepted_policy') ?? false;
-  }
-
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-
-    return FutureBuilder<bool>(
-      future: hasAcceptedPolicy(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const CircularProgressIndicator();
-        }
-
-        bool hasAccepted = snapshot.data!;
-        return MaterialApp(
-          title: 'Waste Identifier',
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              brightness: MediaQuery.platformBrightnessOf(context),
-              seedColor: Color(0xFF031601),
-            ),
-          ),
-          home: hasAccepted ? MyHomePage(title: 'Waste Identifier', camera: camera) : PrivacyScreen(),
-          navigatorObservers: [routeObserver]
-        );
-      }
-    );
-  }
-}
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title, required this.camera});
@@ -99,9 +49,10 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
   void initState() {
     super.initState();
 
-    /**/
-    SharedPreferences.getInstance().then((prefs) => prefs.setBool('accepted_policy', false));
-    /**/
+    // Setup camera
+    WidgetsFlutterBinding.ensureInitialized();
+    final cameras = await availableCameras();
+    final firstCamera = cameras.first;
 
     _camController = CameraController(
       widget.camera,
