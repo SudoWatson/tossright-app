@@ -47,9 +47,7 @@ class _MyHomePageState extends State<MyHomePage> with RouteAware {
   void initState() {
     super.initState();
 
-    /**/
-    SharedPreferences.getInstance().then((prefs) => prefs.setBool('accepted_policy', false));
-    /**/
+    // SharedPreferences.getInstance().then((prefs) => prefs.setBool('accepted_policy', false));  // Reset privacy policy viewed
 
     _camController = CameraController(
       widget.camera,
