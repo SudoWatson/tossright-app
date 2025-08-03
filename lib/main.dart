@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
 
         bool hasAccepted = snapshot.data!;
         return MaterialApp(
-          title: 'RightToss',
+          title: 'TossRight',
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
               brightness: MediaQuery.platformBrightnessOf(context),
@@ -57,8 +57,8 @@ class MyApp extends StatelessWidget {
             ),
           ),
           home: hasAccepted
-            ? MyHomePage(title: 'RightToss', camera: camera, routeObserver: routeObserver)
-            : PrivacyScreen(buildAcceptedScreen: (_) => MyHomePage(title: 'RightToss', camera: camera, routeObserver: routeObserver)),
+            ? MyHomePage(title: 'TossRight', camera: camera, routeObserver: routeObserver)
+            : PrivacyScreen(buildAcceptedScreen: (_) => MyHomePage(title: 'TossRight', camera: camera, routeObserver: routeObserver)),
           navigatorObservers: [routeObserver]
         );
       }

@@ -30,7 +30,7 @@ class PrivacyScreen extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Text(
                   '''
-Welcome to RightToss
+Welcome to TossRight
 
 By using this app, you agree to the following terms regarding data collection, privacy, and license transfer.
 
@@ -72,7 +72,7 @@ No Deletion Requests Possible
 User Age & Agreement
 - You must be at least 13 years old (or older, depending on your country) to use this app.
 - If you do not agree to these terms, or your country prevents this data from being stored on our servers, you must exit the app and stop using it.
-- For any questions send an email to righttoss@pm.me
+- For any questions send an email to tossright@pm.me
 
 By continuing, you agree to these terms.
 ''',
