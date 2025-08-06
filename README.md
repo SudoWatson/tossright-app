@@ -15,10 +15,10 @@ TossRight is a mobile application that is able to image waste, classify what it 
 > The model is not 100% accurate and will often give incorrect results. Please provide feedback using the available buttons when this happens to improve the model and make it more accurate. Every image helps.
 
 > [!NOTE]
-> The model is trained on images of a white background. It will provide the best results if your image is taken in front of a mostly white background, but still is subject to inaccuracies mentioned above. I do suggest taking images in-front of non-white backgrounds and providing feedback on them so the model can be trained on my backgrounds and be more useful. It is unlikely to work well on a noisy background regardless though.
+> The model is trained on images on a white background. It will provide the best results if your image is taken in front of a mostly white background, but still is subject to inaccuracies mentioned above. I do suggest taking images in front of non-white backgrounds and providing feedback on them so the model can be trained on my backgrounds and be more useful. It is unlikely to work well on a noisy background regardless though.
 
 ## Installation
-The app is in the process of being published to app repositories like F-Droid and Google Play Store. Android users can follow the **Develop** instructions to load the application. Since I don't own any Apple devices, I am unable to publish it to the Apple App Store.
+The app is in the process of being published to app repositories like F-Droid and Google Play Store. Android users can follow the [Develop](#develop) instructions to load the application. Since I don't own any Apple devices, I am unable to publish it to the Apple App Store.
 
 ## Develop
 - Ensure you have the Flutter SDK installed
