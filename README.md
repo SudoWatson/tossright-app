@@ -1,6 +1,6 @@
 # TossRight: Waste classifier and disposal instructions
 
-`overview image go here`
+![3 Screenshots of the app looping](./screenshots/screenshots.gif)
 
 # Overview
 TossRight is a mobile application that is able to image waste, classify what it is, and give you instructions for the best method of disposing of that item. All images taken with the app are uploaded to a server to improve the computer vision model.
