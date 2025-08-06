@@ -7,6 +7,16 @@ TossRight is a mobile application that is able to image waste, classify what it 
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
+### Notices
+> [!IMPORTANT]
+> Images taken with this app WILL be uploaded to a server to be used to further train the model. An opt-out/opt-in will be provided in the near-future, but is not implemented. There is no way to delete these images once sent to the server, as there is no way to trace them back to you. Track status on issue [#1](https://github.com/SudoWatson/tossright-app/issues/1) for updates to this. One of the primary purposes of this app is to be a crowdsourced approach to creating an open Waste Identification model to be used by others.
+
+> [!WARNING]
+> The model is not 100% accurate and will often give incorrect results. Please provide feedback using the available buttons when this happens to improve the model and make it more accurate. Every image helps.
+
+> [!NOTE]
+> The model is trained on images of a white background. It will provide the best results if your image is taken in front of a mostly white background, but still is subject to inaccuracies mentioned above. I do suggest taking images in-front of non-white backgrounds and providing feedback on them so the model can be trained on my backgrounds and be more useful. It is unlikely to work well on a noisy background regardless though.
+
 ## Installation
 The app is in the process of being published to app repositories like F-Droid and Google Play Store. Android users can follow the **Develop** instructions to load the application. Since I don't own any Apple devices, I am unable to publish it to the Apple App Store.
 
