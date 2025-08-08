@@ -13,8 +13,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'trash_classifier.dart';
 import 'notices_screen.dart';
 
-final String API_ROOT = "http://192.168.0.59:8000";  // PC
+//final String API_ROOT = "http://192.168.0.59:8000";  // PC
 //final String API_ROOT = "http://192.168.0.107:10000";  // Mercury
+final String API_ROOT = "http://129.213.54.200:10000";  // Server
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title, required this.camera, required this.routeObserver});
