@@ -5,7 +5,8 @@
 # Overview
 TossRight is a mobile application that is able to image waste, classify what it is, and give you instructions for the best method of disposing of that item. All images taken with the app are uploaded to a server to improve the computer vision model.
 
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)  ![GitHub Release](https://img.shields.io/github/v/release/SudoWatson/tossright-app)
+
 
 ### Notices
 > [!IMPORTANT]
@@ -18,7 +19,11 @@ TossRight is a mobile application that is able to image waste, classify what it 
 > The model is trained on images on a white background. It will provide the best results if your image is taken in front of a mostly white background, but still is subject to inaccuracies mentioned above. I do suggest taking images in front of non-white backgrounds and providing feedback on them so the model can be trained on my backgrounds and be more useful. It is unlikely to work well on a noisy background regardless though.
 
 ## Installation
-The app is in the process of being published to app repositories like F-Droid and Google Play Store. Android users can follow the [Develop](#develop) instructions to load the application. Since I don't own any Apple devices, I am unable to publish it to the Apple App Store.
+The app is in the process of being published to app repositories like F-Droid and Google Play Store.
+
+Android users can download and install the apk file from the **Releases** tab on the right.
+
+As I do not own any Apple devices, I am unable to test or build apps for Apple devices.
 
 ## Develop
 - Ensure you have the Flutter SDK installed
