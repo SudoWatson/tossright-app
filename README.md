@@ -3,7 +3,7 @@
 ![3 Screenshots of the app looping](./screenshots/screenshots.gif)
 
 # Overview
-TossRight is a mobile application that is able to image waste, classify what it is, and give you instructions for the best method of disposing of that item. All images taken with the app are uploaded to a server to improve the computer vision model.
+TossRight is a mobile application that is currently primarily a way to crowd-source images of house-hold waste to train a Computer Vision model to classify the waste stream, and secondarily to be used to help identify and instruct on how to best dispose of said item (currently not really useufl, but as model is further trained, improved, and becomes more granular, it can eventually become a useful app on its own). As it's primarily a way of gather images for model improvement, all images taken with the app are uploaded to a server to improve the computer vision model.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)  ![GitHub Release](https://img.shields.io/github/v/release/SudoWatson/tossright-app)
 
@@ -15,8 +15,6 @@ TossRight is a mobile application that is able to image waste, classify what it 
 > [!WARNING]
 > The model is not 100% accurate and will often give incorrect results. Please provide feedback using the available buttons when this happens to improve the model and make it more accurate. Every image helps.
 
-> [!NOTE]
-> The model is trained on images on a white background. It will provide the best results if your image is taken in front of a mostly white background, but still is subject to inaccuracies mentioned above. I do suggest taking images in front of non-white backgrounds and providing feedback on them so the model can be trained on my backgrounds and be more useful. It is unlikely to work well on a noisy background regardless though.
 
 ## Installation
 The app is in the process of being published to app repositories like F-Droid and Google Play Store.
@@ -35,8 +33,9 @@ As I do not own any Apple devices, I am unable to test or build apps for Apple d
 The application should be installed and start on your device.
 
 ## Computer Vision Model
-The app currently uses a TensorFlow model trained on the TrashNet dataset. Images taken with the app will be uploaded to a server (source coming soon) to be used to train more accurate vision models.## Roadmap
+The app currently uses a TensorFlow model trained on the TrashNet dataset. Images taken with the app will be uploaded to a server (source coming soon) to be used to train more accurate vision models.
 
+## Roadmap
 - [ ] Publish app to Android repositories.
 - [ ] Allow using the app without uploading images and feedback
 - [ ] Expand common classification types
@@ -47,6 +46,7 @@ The app currently uses a TensorFlow model trained on the TrashNet dataset. Image
     - [ ] Etc.
 - [ ] Allow users to annotate incorrectly classified images in feedback
 - [ ] User accessible history/statistics
+- [ ] Provide information more specific to location.
 
 ## Recycling
 
