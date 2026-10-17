@@ -3,22 +3,19 @@
 ![3 Screenshots of the app looping](./screenshots/screenshots.gif)
 
 # Overview
-TossRight is a mobile application that is currently primarily a way to crowd-source images of house-hold waste to train a Computer Vision model to classify the waste stream, and secondarily to be used to help identify and instruct on how to best dispose of said item (currently not really useufl, but as model is further trained, improved, and becomes more granular, it can eventually become a useful app on its own). As it's primarily a way of gather images for model improvement, all images taken with the app are uploaded to a server to improve the computer vision model.
+TossRight is a mobile application that is currently primarily an experiment for a way to crowd-source images of house-hold waste to train a Computer Vision model to classify the waste stream, and secondarily to be used to help identify and instruct on how to best dispose of said item (currently not really useufl, but as model is further trained, improved, and becomes more granular, it can eventually become a useful app on its own). As it's primarily a way of gather images for model improvement, all images taken with the app are uploaded to a server to improve the computer vision model.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)  ![GitHub Release](https://img.shields.io/github/v/release/SudoWatson/tossright-app)
 
 
 ### Notices
 > [!IMPORTANT]
-> Images taken with this app WILL be uploaded to a server to be used to further train the model. An opt-out/opt-in will be provided in the near-future, but is not implemented. There is no way to delete these images once sent to the server, as there is no way to trace them back to you. Track status on issue [#1](https://github.com/SudoWatson/tossright-app/issues/1) for updates to this. One of the primary purposes of this app is to be a crowdsourced approach to creating an open Waste Identification model to be used by others.
+> This is an experimental demonstration for myself and baseline for future plans. This will not be actively maintained or updated until I get the time and vision to take this further.
 
-> [!WARNING]
-> The model is not 100% accurate and will often give incorrect results. Please provide feedback using the available buttons when this happens to improve the model and make it more accurate. Every image helps.
-
+> [!IMPORTANT]
+> Images taken with this app WILL be uploaded to a server to be used to further train the model. There is no way to delete these images once sent to the server, as there is no way to trace them back to you.
 
 ## Installation
-The app is in the process of being published to app repositories like F-Droid and Google Play Store.
-
 Android users can download and install the apk file from the **Releases** tab on the right.
 
 As I do not own any Apple devices, I am unable to test or build apps for Apple devices.
@@ -33,10 +30,10 @@ As I do not own any Apple devices, I am unable to test or build apps for Apple d
 The application should be installed and start on your device.
 
 ## Computer Vision Model
-The app currently uses a TensorFlow model trained on the TrashNet dataset. Images taken with the app will be uploaded to a server (source coming soon) to be used to train more accurate vision models.
+The app currently uses a TensorFlow model trained on the TrashNet dataset. Images taken with the app will be uploaded to a server to be used to train more accurate vision models.
 
 ## Roadmap
-- [ ] Publish app to Android repositories.
+These are the next items I plan on implementing when I get the time and vision to take this project further.
 - [ ] Allow using the app without uploading images and feedback
 - [ ] Expand common classification types
     - [ ] Batteries
